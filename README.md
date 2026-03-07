@@ -45,7 +45,7 @@ src/i18n/
 
 ## 🚀 Uso
 ```python
-from src.i18n.i18n import t, language_selector
+from modules.i18n.i18n import t, language_selector
 
 language_selector()  # Selector en la barra lateral
 

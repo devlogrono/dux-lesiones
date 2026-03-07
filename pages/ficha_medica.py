@@ -1,9 +1,9 @@
 import streamlit as st
 import datetime
-import src.app_config.config as config
+import modules.app_config.config as config
 config.init_config()
 
-from src.ui.ui_components import selection_header
+from modules.ui.ui_components import selection_header
 
 st.header("Ficha :red[médica]", divider=True)
 

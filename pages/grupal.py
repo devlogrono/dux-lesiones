@@ -1,13 +1,13 @@
 import streamlit as st
 import plotly.express as px
-from src.i18n.i18n import t
-import src.app_config.config as config
+from modules.i18n.i18n import t
+import modules.app_config.config as config
 config.init_config()
 
-from src.ui.ui_components import data_filters_advanced
-from src.reports.ui_grupal import groupal_metrics
-from src.db.db_records import get_records_plus_players_db
-from src.util.util import clean_df
+from modules.ui.ui_components import data_filters_advanced
+from modules.reports.ui_grupal import groupal_metrics
+from modules.db.db_records import get_records_plus_players_db
+from modules.util.util import clean_df
 
 st.header(t("Análisis :red[grupal]"), divider=True)
 

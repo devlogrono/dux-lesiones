@@ -1,10 +1,11 @@
 import streamlit as st
-from src.i18n.i18n import t
-import src.app_config.config as config
+from modules.i18n.i18n import t
+import modules.app_config.config as config
+from modules.util.util import clean_df
 config.init_config()
 
-from src.ui.ui_components import selection_header
-from src.db.db_records import delete_lesiones
+from modules.ui.ui_components import selection_header
+from modules.db.db_records import delete_lesiones
 
 if st.session_state["auth"]["rol"].lower() not in ["admin", "developer"]:
     st.switch_page("app.py")
@@ -15,11 +16,11 @@ jugadora_seleccionada, posicion, records = selection_header(modo=3)
 #records, jugadora, tipo, turno, start, end = selection_header(jug_df, comp_df, wellness_df, modo="reporte")
 
 if records.empty:
-    st.error(t("No se encontraron registros"))
+    st.info("No se encontraron registros de lesiones. Por favor, añade datos para continuar.")
     st.stop()
 
 disabled = records.columns.tolist()
-
+#records = clean_df(records)
 columna = t("seleccionar")
 # --- Agregar columna de selección si no existe ---
 if columna not in records.columns:

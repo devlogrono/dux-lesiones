@@ -1,42 +1,41 @@
 import time
 import streamlit as st
-from src.i18n.i18n import t
-import src.app_config.config as config
+from modules.i18n.i18n import t
+import modules.app_config.config as config
 config.init_config()
 
-from src.ui.records_ui import view_registro_lesion
-from src.db.db_records import save_lesion
-from src.ui.ui_components import selection_header
-from src.util.util import clean_df, sanitize_lesion_data
+from modules.ui.records_ui import view_registro_lesion
+from modules.db.db_records import save_lesion
+from modules.ui.ui_components import selection_header
+from modules.util.util import clean_df, sanitize_lesion_data
 
 st.header(t("Seguimiento de :red[lesiones]"), divider="red")
 
 jugadora_seleccionada, posicion, records = selection_header(modo=2)
 st.divider()
 
-#st.dataframe(records)
+if not jugadora_seleccionada:
+    st.info("Selecciona una jugadora para continuar.")
+    st.stop()
 
 if records.empty:    
     st.warning(t("No hay datos de lesiones disponibles."))
     st.stop()   
     
-if not jugadora_seleccionada:
-    st.info("Selecciona una jugadora para continuar.")
-    st.stop()
 
 if jugadora_seleccionada and isinstance(jugadora_seleccionada, dict):
-    nombre_completo = (jugadora_seleccionada["nombre"] + " " + jugadora_seleccionada["apellido"]).upper()
-    id_jugadora = jugadora_seleccionada["identificacion"]
+    nombre_completo = jugadora_seleccionada["nombre_jugadora"]
+    id_jugadora = jugadora_seleccionada["id_jugadora"]
     posicion = jugadora_seleccionada["posicion"]
 
     jugadora_info = {
-        "id_jugadora": jugadora_seleccionada.get("identificacion"),
-        "nombre_completo": f"{jugadora_seleccionada.get('nombre', '')} {jugadora_seleccionada.get('apellido', '')}".upper().strip(),
-        "posicion": jugadora_seleccionada.get("posicion"),
+        "id_jugadora": id_jugadora,
+        "nombre_completo": nombre_completo.strip(),
+        "posicion": posicion,
         "id_lesion": None
     }
 
-    records = records[records["id_jugadora"] == jugadora_seleccionada["identificacion"]]
+    records = records[records["id_jugadora"] == jugadora_seleccionada["id_jugadora"]]
 
 OPCIONES_ESTATUS = {
     "Todas": t("Todas"),

@@ -1,11 +1,11 @@
 import streamlit as st
-from src.i18n.i18n import t
-import src.app_config.config as config
+from modules.i18n.i18n import t
+import modules.app_config.config as config
 config.init_config()
 
-from src.util.util import clean_df
-from src.ui.ui_components import selection_header, main_metrics
-from src.reports.ui_individual import (grafico_zonas_lesionadas, grafico_tipo_mecanismo, grafico_evolucion_lesiones, 
+from modules.util.util import clean_df
+from modules.ui.ui_components import selection_header, main_metrics
+from modules.reports.ui_individual import (grafico_zonas_lesionadas, grafico_tipo_mecanismo, grafico_evolucion_lesiones, 
                       grafico_tratamientos, grafico_dias_baja, grafico_recidivas, player_block_dux)
 
 st.header(t("Análisis :red[individual]"), divider=True)

@@ -1,10 +1,10 @@
 import streamlit as st
-import src.app_config.config as config
+import modules.app_config.config as config
 config.init_config()
 
-from src.auth_system.auth_core import init_app_state, validate_login
-from src.auth_system.auth_ui import login_view, menu
-from src.db.db_login import load_all_users_from_db
+from modules.auth_system.auth_core import init_app_state, validate_login
+from modules.auth_system.auth_ui import login_view, menu
+from modules.db.db_login import load_all_users_from_db
 
 if st.session_state["auth"]["rol"].lower() != "developer":
     st.switch_page("app.py")

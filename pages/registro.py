@@ -1,12 +1,12 @@
 import time
 import streamlit as st
-from src.i18n.i18n import t
-import src.app_config.config as config
+from modules.i18n.i18n import t
+import modules.app_config.config as config
 config.init_config()
 
-from src.ui.ui_components import selection_header
-from src.ui.records_ui import view_registro_lesion
-from src.db.db_records import save_lesion
+from modules.ui.ui_components import selection_header
+from modules.ui.records_ui import view_registro_lesion
+from modules.db.db_records import save_lesion
 
 st.header(t("Registro de :red[lesiones]"), divider=True)
 
@@ -14,15 +14,17 @@ jugadora_seleccionada, posicion = selection_header()
 
 st.divider()
 
+#st.dataframe(jugadora_seleccionada)
+
 if jugadora_seleccionada and isinstance(jugadora_seleccionada, dict):
-    nombre_completo = (jugadora_seleccionada["nombre"] + " " + jugadora_seleccionada["apellido"]).upper()
-    id_jugadora = jugadora_seleccionada["identificacion"]
+    nombre_completo = jugadora_seleccionada["nombre_jugadora"]
+    id_jugadora = jugadora_seleccionada["id_jugadora"]
     posicion = jugadora_seleccionada["posicion"]
 
     jugadora_info = {
-    "id_jugadora": jugadora_seleccionada.get("identificacion"),
-    "nombre_completo": f"{jugadora_seleccionada.get('nombre', '')} {jugadora_seleccionada.get('apellido', '')}".upper().strip(),
-    "posicion": jugadora_seleccionada.get("posicion"),
+    "id_jugadora": id_jugadora,
+    "nombre_completo": nombre_completo.strip(),
+    "posicion": posicion,
     "id_lesion": None}
 
 else:
