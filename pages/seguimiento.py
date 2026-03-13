@@ -21,7 +21,12 @@ if not jugadora_seleccionada:
 if records.empty:    
     st.warning(t("No hay datos de lesiones disponibles."))
     st.stop()   
-    
+
+# if "form_version" not in st.session_state:
+#     st.session_state["form_version"] = 0
+
+# if "form_submitted" not in st.session_state:
+#     st.session_state.form_submitted = False
 
 if jugadora_seleccionada and isinstance(jugadora_seleccionada, dict):
     nombre_completo = jugadora_seleccionada["nombre_jugadora"]
@@ -52,9 +57,13 @@ estado_filtro_traducido = st.radio(
 )
 
 # 🔥 Mapeo invertido: valor traducido → clave original
-estado_filtro = next(k for k, v in OPCIONES_ESTATUS.items() if v == estado_filtro_traducido)
-
+estado_filtro = next(
+    (k for k, v in OPCIONES_ESTATUS.items() if v == estado_filtro_traducido),
+    "Todas"
+)
 #estado_filtro = st.radio(t("Filtrar por estatus:"),["Todas", "Activas", "En Observación", "Inactivas"],horizontal=True, index=0)
+records["estado_lesion"].fillna("").str.lower()
+
 
 if estado_filtro == "Activas":
     records = records[records["estado_lesion"].str.lower() == "activo"]
@@ -73,37 +82,77 @@ elif num_lesiones == 1:
 else:
     st.markdown(f"**{t('Se encontraron')} {num_lesiones} {t('lesiones')} {estado_filtro.lower()[:] if estado_filtro != 'Todas' else ''} {t('registradas')}**")
 
+selection_context = {
+    "id_jugadora": jugadora_info["id_jugadora"],
+    "estado_filtro": estado_filtro,
+    "num_records": len(records)
+}
+
+previous_context = st.session_state.get("lesion_selection_context")
+
+if previous_context != selection_context:
+    st.session_state.pop("selected_lesion_id", None)
+
+st.session_state["lesion_selection_context"] = selection_context
+
 # === Mostrar resultado ===
 df_filtrado = clean_df(records)
-st.dataframe(df_filtrado)
 
+#st.dataframe(df_filtrado)
+event = st.dataframe(
+        df_filtrado,
+        on_select="rerun",
+        selection_mode="single-row",
+        key="tabla_lesiones"
+    )
 
-#st.divider()
-st.subheader(t(":red[Buscar] lesión"), divider="red")
-col1, col2 = st.columns([1,2])
+selected_rows = event.selection.rows if event.selection else []
 
-with col1:
-    input_id = st.text_input(t("Introduce el ID de la lesión:"), placeholder=t("Ejemplo: AJB20251013-4"))
+id_buscar = None
 
-# Si se introduce un ID y se presiona Enter
-if input_id:
-    # Intentamos convertir a número si aplica
-    try:
-        id_buscar = int(input_id)
-    except ValueError:
-        id_buscar = input_id  # por si los ID son strings
+# selección directa desde la tabla
+if selected_rows:
+    row_index = selected_rows[0]
+    id_buscar = df_filtrado.iloc[row_index]["id_lesion"]
+    st.session_state["selected_lesion_id"] = id_buscar
 
-    # Buscar el registro
+# mantener selección actual mientras el contexto no cambie
+elif st.session_state.get("selected_lesion_id"):
+    selected_id = st.session_state["selected_lesion_id"]
+
+    # solo mantenerla si aún existe en el dataframe filtrado actual
+    if selected_id in df_filtrado["id_lesion"].values:
+        id_buscar = selected_id
+    else:
+        st.session_state.pop("selected_lesion_id", None)
+
+# limpiar flag después de usarlo
+if st.session_state.get("from_save"):
+    st.session_state["from_save"] = False
+# ------------------------------------
+# cargar lesión
+# ------------------------------------
+if id_buscar:
+
     lesion = records.loc[records["id_lesion"] == id_buscar]
-
     if not lesion.empty:
+
         lesion_data = lesion.iloc[0].to_dict()
         lesion_data = sanitize_lesion_data(lesion_data)
-        #with st.expander(f"Registro médico de la lesión",expanded=True):
-        record, error, disabled_evolution = view_registro_lesion(modo="editar", jugadora_info=jugadora_info, lesion_data=lesion_data)
+
+        estado_original = lesion_data.get("estado_lesion")
+        # if estado_original == "INACTIVO":
+        #     disabled_guardar = True
+
+        st.divider()
+        st.info(f"Editando lesión: {id_buscar}")
+        record, error, disabled_evolution, form_changed, evolucion_changed, disabled_edit = view_registro_lesion(
+            modo="editar", jugadora_info=jugadora_info, lesion_data=lesion_data)
+
     else:
-        st.error(t("No se encontró ninguna lesion con ese ID."))
+        st.error(t("No se encontró ninguna lesión con ese ID."))
         st.stop()
+
 
     ######################## GUARDADO Y REINICIO ########################
     #st.session_state.form_submitted = False
@@ -111,8 +160,21 @@ if input_id:
     if "form_submitted" not in st.session_state:
         st.session_state.form_submitted = False
 
-    # Determinar si el botón debe estar deshabilitado
-    disabled_guardar = disabled_evolution or error
+    # ----------------------------------
+    # Control del botón Guardar
+    # ----------------------------------
+
+    disabled_guardar = True
+
+    if estado_original == "INACTIVO":
+        disabled_guardar = True
+    elif evolucion_changed:
+        disabled_guardar = False
+    elif not disabled_edit and form_changed:
+        disabled_guardar = False
+
+    if error:
+        disabled_guardar = True
 
     submitted = st.button(t("Guardar"),disabled=disabled_guardar, type="primary")
     success = False
@@ -120,21 +182,24 @@ if input_id:
     if submitted:
         # Evitar dobles clics
         st.session_state.form_submitted = True
-        st.session_state["form_version"] += 1
 
         try:
             with st.spinner(t("Actualizando lesión...")):
+                # sincronizar estado real de la lesión
+                if evolucion_changed:
+
+                    ultima_evolucion = record["evolucion"][-1]
+
+                    if "Lesión Inactivada" in ultima_evolucion.get("observaciones", ""):
+                        record["estado_lesion"] = "INACTIVO"
+
+                    elif "Lesión Activada" in ultima_evolucion.get("observaciones", ""):
+                        record["estado_lesion"] = "ACTIVO"
                 success = save_lesion(record, "editar")
 
                 if success:
                     # Si el guardado fue exitoso
-                    
                     st.session_state["flash"] = t(":material/done_all: Lesión guardada correctamente.")
-                    #{record['id_lesion']}
-                    #st.rerun()
-                    time.sleep(4)
-                    #st.switch_page("pages/switch.py")
-                    #st.markdown("""<script>window.scrollTo({top: 0, behavior: 'smooth'});</script>""", unsafe_allow_html=True)
                 else:
                     # Si hubo error en save_lesion, desbloquear botón
                     st.warning(t(":material/warning: No se pudo guardar la lesión. Revisa los datos e inténtalo nuevamente."))
@@ -151,7 +216,26 @@ if input_id:
         st.session_state["flash"] = None
         st.session_state.form_submitted = False
 
+    lesion_inactivada = (
+        estado_original != "INACTIVO"
+        and record.get("estado_lesion") == "INACTIVO"
+    )
+
     if success:
-        st.rerun()
-        # st.session_state["target_page"] = "seguimiento"
-        # st.switch_page("pages/switch.py")
+
+        if lesion_inactivada:
+            st.session_state["flash"] = t(":material/done_all: Lesión inactivada correctamente.")
+            st.session_state["form_version"] += 1
+            st.session_state["from_save"] = True
+            st.rerun()
+
+        elif evolucion_changed:
+            st.session_state["flash"] = t(":material/done_all: Seguimiento guardado correctamente.")
+            st.session_state["form_version"] += 1
+            st.session_state["from_save"] = True
+            st.rerun()
+
+        else:
+            st.session_state["flash"] = t(":material/done_all: Lesión actualizada correctamente.")
+            st.session_state["form_version"] += 1
+            st.rerun()

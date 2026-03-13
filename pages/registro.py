@@ -31,7 +31,7 @@ else:
     st.info(t("Selecciona una jugadora para continuar."))
     st.stop()
 
-record, error, disabled_evolution = view_registro_lesion(jugadora_info=jugadora_info)
+record, error, disabled_evolution, *_ = view_registro_lesion(jugadora_info=jugadora_info)
 
 ######################## GUARDADO Y REINICIO ########################
 # Inicializar control de estado del botón
@@ -55,15 +55,10 @@ if submitted:
 
             if success:
                 # Si el guardado fue exitoso
-                
                 st.session_state["flash"] = f":material/done_all: Lesión guardada correctamente."
                 st.success(st.session_state["flash"])
-                #{record['id_lesion']}
-                #st.rerun()
-                time.sleep(4)
-                #st.switch_page("pages/switch.py")
-                #st.markdown("""<script>window.scrollTo({top: 0, behavior: 'smooth'});</script>""", unsafe_allow_html=True)
-                
+                time.sleep(1)
+
             else:
                 # Si hubo error en save_lesion, desbloquear botón
                 st.warning(t(":material/warning: No se pudo guardar la lesión. Revisa los datos e inténtalo nuevamente."))
