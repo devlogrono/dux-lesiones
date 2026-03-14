@@ -423,6 +423,6 @@ def view_registro_lesion(modo: str = "nuevo", jugadora_info: str = None, lesion_
     # st.write("1 - FORM_SNAPSHOT:", form_snapshot)
     # st.write("2 - ORIGINAL_SNAPSHOT:", original_snapshot if modo == "editar" else None)
     # st.write("3 - FORM_CHANGED:", form_changed)
-    # st.write("4- EVOLUCION_CHANGED:", evolucion_changed)
+    #st.write("4- EVOLUCION_CHANGED:", evolucion_changed)
 
     return record, error, disabled_evolution, form_changed, evolucion_changed, disabled_edit

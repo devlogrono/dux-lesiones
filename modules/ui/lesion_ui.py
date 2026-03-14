@@ -313,7 +313,7 @@ def show_evolucion_historial_read(lesion_data: dict):
 
     # 8. Mostrar resultados
     st.divider()
-    st.markdown(t("### Historial"))
+    st.markdown(t("### Historial Evolutivo"))
 
     num_sesiones = len(df_evol)
     st.caption(f"{t('Total de sesiones registradas:')} **{num_sesiones}**")
