@@ -96,7 +96,6 @@ st.session_state["lesion_selection_context"] = selection_context
 # === Mostrar resultado ===
 df_filtrado = clean_df(records)
 
-#st.dataframe(df_filtrado)
 event = st.dataframe(
         df_filtrado[["id_lesion", "nombre_jugadora", "fecha_lesion", "zona_cuerpo", "zona_especifica", 
                      "tipo_lesion", "personal_reporta", "estado_lesion"]],
@@ -107,28 +106,25 @@ event = st.dataframe(
 
 selected_rows = event.selection.rows if event.selection else []
 
-previous_selected = st.session_state.get("selected_lesion_id")
+id_buscar = None
 
+# -----------------------------------------
+# selección directa desde la tabla
+# -----------------------------------------
 if selected_rows:
+
     row_index = selected_rows[0]
     selected_id = df_filtrado.iloc[row_index]["id_lesion"]
+
     st.session_state["selected_lesion_id"] = selected_id
-
-elif previous_selected and event.selection is not None:
-    # el usuario quitó la selección manualmente
-    st.session_state.pop("selected_lesion_id", None)
-
-id_buscar = st.session_state.get("selected_lesion_id")
-
-if not id_buscar:
-    st.stop()
+    id_buscar = selected_id
 
 # -----------------------------------------
 # si NO hay selección → limpiar
 # -----------------------------------------
-# else:
-#     if "selected_lesion_id" in st.session_state:
-#         st.session_state.pop("selected_lesion_id", None)
+else:
+    if "selected_lesion_id" in st.session_state:
+        st.session_state.pop("selected_lesion_id", None)
 
 if "selected_lesion_id" not in st.session_state:
     st.stop()
@@ -157,7 +153,6 @@ if id_buscar:
 
 
     ######################## GUARDADO Y REINICIO ########################
-    #st.session_state.form_submitted = False
     # Inicializar control de estado del botón
     if "form_submitted" not in st.session_state:
         st.session_state.form_submitted = False
@@ -228,26 +223,11 @@ if id_buscar:
         if lesion_inactivada:
             st.session_state["flash"] = t(":material/done_all: Lesión inactivada correctamente.")
             st.session_state["form_version"] += 1
-            #st.session_state["from_save"] = True
             st.rerun()
 
         elif evolucion_changed:
             st.session_state["flash"] = t(":material/done_all: Seguimiento guardado correctamente.")
             st.session_state["form_version"] += 1
-            #st.session_state["from_save"] = True
-            
-
-            # keys_to_clear = [
-            #     f"fecha_control_{st.session_state['form_version']}",
-            #     f"tratamiento_aplicado_{st.session_state['form_version']}",
-            #     f"personal_seguimiento_{st.session_state['form_version']}",
-            #     f"incidencias_{st.session_state['form_version']}"
-            # ]
-
-            # for k in keys_to_clear:
-            #     if k in st.session_state:
-            #         del st.session_state[k]
-            
             st.rerun()
 
         else:
