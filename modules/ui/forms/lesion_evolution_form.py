@@ -196,6 +196,23 @@ def render_lesion_evolution_form(
         [t.upper() for t in tratamiento_aplicado] if isinstance(tratamiento_aplicado, list) else []
     )
 
+    if not seguimiento:
+        return {
+            "record_evolucion": {
+                "fecha_control": None,
+                "tratamiento_aplicado": [],
+                "personal_seguimiento": None,
+                "observaciones": None,
+                "fecha_hora_registro": None,
+                "usuario": None
+            },
+            "alta_medica": False,
+            "alta_deportiva": False,
+            "fecha_alta_medica": None,
+            "fecha_alta_deportiva": None,
+            "error": False
+        }
+
     record_evolucion = {
         "fecha_control": fecha_control.strftime("%Y-%m-%d"),
         "tratamiento_aplicado": tratamiento_aplicado_str,
@@ -277,7 +294,7 @@ def show_evolucion_historial(lesion_data: dict):
 
     # 8. Mostrar resultados
     st.divider()
-    st.markdown(t("### Historial"))
+    st.markdown(t("### Historial Evolutivo"))
 
     num_sesiones = len(df_evol)
     st.caption(f"{t('Total de sesiones registradas:')} **{num_sesiones}**")

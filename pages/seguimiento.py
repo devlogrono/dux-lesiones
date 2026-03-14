@@ -61,9 +61,6 @@ estado_filtro = next(
     (k for k, v in OPCIONES_ESTATUS.items() if v == estado_filtro_traducido),
     "Todas"
 )
-#estado_filtro = st.radio(t("Filtrar por estatus:"),["Todas", "Activas", "En Observación", "Inactivas"],horizontal=True, index=0)
-records["estado_lesion"].fillna("").str.lower()
-
 
 if estado_filtro == "Activas":
     records = records[records["estado_lesion"].str.lower() == "activo"]
@@ -84,14 +81,15 @@ else:
 
 selection_context = {
     "id_jugadora": jugadora_info["id_jugadora"],
-    "estado_filtro": estado_filtro,
-    "num_records": len(records)
+    "estado_filtro": estado_filtro
 }
 
 previous_context = st.session_state.get("lesion_selection_context")
 
+# limpiar selección si cambia jugadora o filtro
 if previous_context != selection_context:
     st.session_state.pop("selected_lesion_id", None)
+    st.session_state.pop("tabla_lesiones", None)
 
 st.session_state["lesion_selection_context"] = selection_context
 
@@ -100,7 +98,8 @@ df_filtrado = clean_df(records)
 
 #st.dataframe(df_filtrado)
 event = st.dataframe(
-        df_filtrado,
+        df_filtrado[["id_lesion", "nombre_jugadora", "fecha_lesion", "zona_cuerpo", "zona_especifica", 
+                     "tipo_lesion", "personal_reporta", "estado_lesion"]],
         on_select="rerun",
         selection_mode="single-row",
         key="tabla_lesiones"
@@ -108,27 +107,32 @@ event = st.dataframe(
 
 selected_rows = event.selection.rows if event.selection else []
 
-id_buscar = None
+previous_selected = st.session_state.get("selected_lesion_id")
 
-# selección directa desde la tabla
 if selected_rows:
     row_index = selected_rows[0]
-    id_buscar = df_filtrado.iloc[row_index]["id_lesion"]
-    st.session_state["selected_lesion_id"] = id_buscar
+    selected_id = df_filtrado.iloc[row_index]["id_lesion"]
+    st.session_state["selected_lesion_id"] = selected_id
 
-# mantener selección actual mientras el contexto no cambie
-elif st.session_state.get("selected_lesion_id"):
-    selected_id = st.session_state["selected_lesion_id"]
+elif previous_selected and event.selection is not None:
+    # el usuario quitó la selección manualmente
+    st.session_state.pop("selected_lesion_id", None)
 
-    # solo mantenerla si aún existe en el dataframe filtrado actual
-    if selected_id in df_filtrado["id_lesion"].values:
-        id_buscar = selected_id
-    else:
-        st.session_state.pop("selected_lesion_id", None)
+id_buscar = st.session_state.get("selected_lesion_id")
 
-# limpiar flag después de usarlo
-if st.session_state.get("from_save"):
-    st.session_state["from_save"] = False
+if not id_buscar:
+    st.stop()
+
+# -----------------------------------------
+# si NO hay selección → limpiar
+# -----------------------------------------
+# else:
+#     if "selected_lesion_id" in st.session_state:
+#         st.session_state.pop("selected_lesion_id", None)
+
+if "selected_lesion_id" not in st.session_state:
+    st.stop()
+
 # ------------------------------------
 # cargar lesión
 # ------------------------------------
@@ -141,8 +145,6 @@ if id_buscar:
         lesion_data = sanitize_lesion_data(lesion_data)
 
         estado_original = lesion_data.get("estado_lesion")
-        # if estado_original == "INACTIVO":
-        #     disabled_guardar = True
 
         st.divider()
         st.info(f"Editando lesión: {id_buscar}")
@@ -226,13 +228,26 @@ if id_buscar:
         if lesion_inactivada:
             st.session_state["flash"] = t(":material/done_all: Lesión inactivada correctamente.")
             st.session_state["form_version"] += 1
-            st.session_state["from_save"] = True
+            #st.session_state["from_save"] = True
             st.rerun()
 
         elif evolucion_changed:
             st.session_state["flash"] = t(":material/done_all: Seguimiento guardado correctamente.")
             st.session_state["form_version"] += 1
-            st.session_state["from_save"] = True
+            #st.session_state["from_save"] = True
+            
+
+            # keys_to_clear = [
+            #     f"fecha_control_{st.session_state['form_version']}",
+            #     f"tratamiento_aplicado_{st.session_state['form_version']}",
+            #     f"personal_seguimiento_{st.session_state['form_version']}",
+            #     f"incidencias_{st.session_state['form_version']}"
+            # ]
+
+            # for k in keys_to_clear:
+            #     if k in st.session_state:
+            #         del st.session_state[k]
+            
             st.rerun()
 
         else:

@@ -66,24 +66,32 @@ def render_lesion_clinical_form(
     # ------------------------------------------------
 
     with col4:
+        key_fecha = f"fecha_alta_diagnostico_{form_version}"
 
-        # lógica correcta de fecha inicial
         if implica_baja:
-
             if fecha_alta_diagnostico_date:
                 fecha_default = fecha_alta_diagnostico_date
             else:
                 fecha_default = datetime.date.today() + datetime.timedelta(days=1)
 
-        else:
-            fecha_default = None
+            if st.session_state.get(key_fecha) in (None, ""):
+                st.session_state[key_fecha] = fecha_default
 
-        fecha_alta_diagnostico = st.date_input(
-            t("Alta Deportiva (estimada)"),
-            value=fecha_default,
-            disabled=(not implica_baja) or disabled_edit,
-            key=f"fecha_alta_diagnostico_{form_version}"
-        )
+            fecha_alta_diagnostico = st.date_input(
+                t("Alta Deportiva (estimada)"),
+                value=st.session_state[key_fecha],
+                disabled=disabled_edit,
+                key=key_fecha
+            )
+        else:
+            st.session_state[key_fecha] = None
+            st.date_input(
+                t("Alta Deportiva (estimada)"),
+                value=datetime.date.today(),
+                disabled=True,
+                key=key_fecha
+            )
+            fecha_alta_diagnostico = None
 
     return {
         "diagnostico": diagnostico,
